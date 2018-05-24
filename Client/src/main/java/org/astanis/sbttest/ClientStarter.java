@@ -29,12 +29,12 @@ public class ClientStarter {
 			while (true) {
 				Random random = new Random();
 				try {
-					Thread.sleep((long) random.nextInt(3000) + 2000);
+					Thread.sleep((long) random.nextInt(4000) + 1000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 				client.remoteCall("service1", "sleep", new Object[]{1000L});
-				logger.info("Current Date is:" + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
+				logger.info("Current Date is: " + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
 
 			}
 		}
