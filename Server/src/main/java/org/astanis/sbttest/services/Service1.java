@@ -1,4 +1,4 @@
-package org.astanis.server.services;
+package org.astanis.sbttest.services;
 
 import java.util.Date;
 

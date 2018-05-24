@@ -1,6 +1,7 @@
-package org.astanis.client;
+package org.astanis.sbttest.client;
 
 import org.apache.log4j.Logger;
+import org.astanis.sbttest.exception.RMIException;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -28,48 +29,46 @@ public class Client {
 	private void openConnection() {
 		try {
 			Socket socket = new Socket(host, port);
-			in = new ObjectInputStream(socket.getInputStream());
 			out = new ObjectOutputStream(socket.getOutputStream());
+			in = new ObjectInputStream(socket.getInputStream());
 		} catch (IOException e) {
 			System.err.println("Server unavailable!");
 			e.printStackTrace();
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public Object remoteCall(String serviceName, String methodName, Object[] params) {
 		int id = requestId.incrementAndGet();
+		Map<String, Object> response;
 		Map<String, Object> request = new HashMap<>();
 		request.put("id", id);
 		request.put("serviceName", serviceName);
 		request.put("methodName", methodName);
 		request.put("params", params);
 
+		Object result = null;
+
 		try {
 			out.writeObject(request);
 			logger.info("Sending request: " + "id = " + id + ", serviceName = " + serviceName +
 				", methodName = " + methodName + ", params = " + Arrays.toString(params));
-		} catch (IOException e) {
+
+			response = (Map<String, Object>) in.readObject();
+
+			String exception = (String) response.get("exception");
+			if (exception != null) {
+				throw new RMIException(exception);
+			}
+
+			result = response.get("result");
+			logger.info("Response reieved: " + "id = " + response.get("id") + ", result = " + result);
+		} catch (IOException | ClassNotFoundException | RMIException e) {
 			e.printStackTrace();
 		}
 
 
-		return null;
-	}
-
-	private static class Caller implements Runnable {
-		private Logger logger = Logger.getLogger(Caller.class);
-		private Client client;
-
-		public Caller(Client cclient) {
-			this.client = cclient;
-		}
-
-		public void run() {
-			while (true) {
-				client.remoteCall("service1", "sleep", new Object[]{1000L});
-				logger.info("Current Date is:" + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
-			}
-		}
+		return result;
 	}
 }
 

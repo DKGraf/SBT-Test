@@ -1,4 +1,6 @@
-package org.astanis.server;
+package org.astanis.sbttest;
+
+import org.astanis.sbttest.server.Server;
 
 public class ServerStarter {
 	public static void main(String[] args) {

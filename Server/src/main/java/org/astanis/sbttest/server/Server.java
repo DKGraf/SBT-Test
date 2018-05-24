@@ -1,4 +1,4 @@
-package org.astanis.server;
+package org.astanis.sbttest.server;
 
 import org.apache.log4j.Logger;
 
@@ -12,19 +12,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
-class Server {
+public class Server {
 	private final int port;
 	private final Logger logger = Logger.getLogger(Server.class);
 	private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 	private final Map<String, Object> services = new ConcurrentHashMap<>();
 
-	Server(int port) {
+	public Server(int port) {
 		this.port = port;
 		initServices();
 	}
 
 	@SuppressWarnings("InfiniteLoopStatement")
-	void run() {
+	public void run() {
 		try (ServerSocket ss = new ServerSocket(port)) {
 			while (true) {
 				Socket client = ss.accept();
@@ -38,21 +38,22 @@ class Server {
 	//TODO add loop
 	@SuppressWarnings("unchecked")
 	private void processRequest(Socket client) {
-		try (ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-		     ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream())) {
+		try (ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
+		     ObjectInputStream in = new ObjectInputStream(client.getInputStream())) {
+			while (!client.isClosed()) {
+				Map<String, Object> requestParams;
+				requestParams = (Map<String, Object>) in.readObject();
 
-			Map<String, Object> requestParams;
-			requestParams = (Map<String, Object>) in.readObject();
+				int id = (int) requestParams.get("id");
+				String serviceName = (String) requestParams.get("serviceName");
+				String methodName = (String) requestParams.get("methodName");
+				Object[] params = (Object[]) requestParams.get("params");
 
-			String id = (String) requestParams.get("id");
-			String serviceName = (String) requestParams.get("serviceName");
-			String methodName = (String) requestParams.get("methodName");
-			Object[] params = (Object[]) requestParams.get("params");
+				logger.info("Received request: " + "ID = " + id + ", serviceName = " + serviceName +
+					", methodName = " + methodName + ", params = " + Arrays.toString(params));
 
-			logger.info("Received request: " + "ID = " + id + ", serviceName = " + serviceName +
-				", methodName = " + methodName + ", params = " + Arrays.toString(params));
-
-			threadPool.submit(() -> processResponse(out, id, serviceName, methodName, params));
+				threadPool.submit(() -> processResponse(out, id, serviceName, methodName, params));
+			}
 		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -60,7 +61,7 @@ class Server {
 
 	//TODO void support
 	private void processResponse(ObjectOutputStream out,
-	                             String requestId,
+	                             int requestId,
 	                             String serviceName,
 	                             String methodName,
 	                             Object[] params) {
@@ -72,22 +73,22 @@ class Server {
 
 		if (service != null) {
 			try {
-				Method method = service.getClass().getMethod(methodName);
-				result = method.invoke(params);
+				Method method = service.getClass().getMethod(methodName, methodArgumentsClasses(params));
+				result = method.invoke(service, params);
 				response.put("result", result);
 			} catch (NoSuchMethodException e) {
-				response.put("error", "No Such Method");
+				response.put("exception", "No Such Method");
 			} catch (IllegalAccessException | InvocationTargetException e) {
 				e.printStackTrace();
 			}
 		} else {
-			response.put("error", "No Such Service");
+			response.put("exception", "No Such Service");
 		}
 
-		String error = (String) response.get("error");
+		String exception = (String) response.get("exception");
 		try {
-			if (error != null) {
-				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + error);
+			if (exception != null) {
+				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + exception);
 				out.writeObject(response);
 			} else {
 				logger.info("Sending response: " + "ID = " + requestId + ", result = " + (result != null ? result.toString() : null));
@@ -121,5 +122,13 @@ class Server {
 			e.printStackTrace();
 		}
 
+	}
+
+	private Class[] methodArgumentsClasses(Object[] params) {
+		Class[] classes = new Class[params.length];
+		for (int i = 0; i < params.length; i++) {
+			classes[i] = params[i].getClass();
+		}
+		return classes;
 	}
 }
