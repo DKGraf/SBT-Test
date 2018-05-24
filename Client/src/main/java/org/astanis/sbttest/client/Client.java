@@ -50,11 +50,15 @@ public class Client {
 		Object result = null;
 
 		try {
-			out.writeObject(request);
+			synchronized (out) {
+				out.writeObject(request);
+			}
 			logger.info("Sending request: " + "ID = " + requestId + ", serviceName = " + serviceName +
 				", methodName = " + methodName + ", params = " + Arrays.toString(params));
 
-			response = (Map<String, Object>) in.readObject();
+			synchronized (in) {
+				response = (Map<String, Object>) in.readObject();
+			}
 
 			String exception = (String) response.get("exception");
 			if (exception != null) {
@@ -71,7 +75,6 @@ public class Client {
 		} catch (IOException | ClassNotFoundException | RmiException e) {
 			e.printStackTrace();
 		}
-
 
 		return result;
 	}

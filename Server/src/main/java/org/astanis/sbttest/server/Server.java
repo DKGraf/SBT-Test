@@ -42,7 +42,10 @@ public class Server {
 		     ObjectInputStream in = new ObjectInputStream(client.getInputStream())) {
 			while (!client.isClosed()) {
 				Map<String, Object> requestParams;
-				requestParams = (Map<String, Object>) in.readObject();
+
+				synchronized (in) {
+					requestParams = (Map<String, Object>) in.readObject();
+				}
 
 				int requestId = (int) requestParams.get("requestId");
 				String serviceName = (String) requestParams.get("serviceName");
@@ -55,7 +58,7 @@ public class Server {
 				threadPool.submit(() -> processResponse(out, requestId, serviceName, methodName, params));
 			}
 		} catch (IOException e) {
-			System.err.println("IO Exception during process request to client!");
+			System.err.println("IO Exception during process request from client!");
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
@@ -92,10 +95,14 @@ public class Server {
 		try {
 			if (exception != null) {
 				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + exception);
-				out.writeObject(response);
+				synchronized (out) {
+					out.writeObject(response);
+				}
 			} else {
 				logger.info("Sending response: " + "ID = " + requestId + ", result = " + (result != null ? result.toString() : null));
-				out.writeObject(response);
+				synchronized (out) {
+					out.writeObject(response);
+				}
 			}
 		} catch (IOException e) {
 			System.err.println("IO Exception during sending response to client!");

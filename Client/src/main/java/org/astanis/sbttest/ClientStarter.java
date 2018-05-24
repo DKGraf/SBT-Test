@@ -11,7 +11,7 @@ public class ClientStarter {
 //		int port = Integer.parseInt(args[1]);
 //		Client client = new Client(host, port);
 		Client client = new Client("localhost", 9999);
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 10; i++) {
 			new Thread(new Caller(client)).start();
 		}
 	}
@@ -27,15 +27,15 @@ public class ClientStarter {
 		@SuppressWarnings("InfiniteLoopStatement")
 		public void run() {
 			while (true) {
-				client.remoteCall("service1", "sleep", new Object[]{1000L});
-				logger.info("Current Date is:" + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
-
 				Random random = new Random();
 				try {
 					Thread.sleep((long) random.nextInt(3000) + 2000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
+				client.remoteCall("service1", "sleep", new Object[]{1000L});
+				logger.info("Current Date is:" + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
+
 			}
 		}
 	}
