@@ -31,11 +31,11 @@ public class Server {
 				new Thread(() -> processRequest(client)).start();
 			}
 		} catch (IOException e) {
+			System.err.println("IO Exception during socket creation!");
 			e.printStackTrace();
 		}
 	}
 
-	//TODO add loop
 	@SuppressWarnings("unchecked")
 	private void processRequest(Socket client) {
 		try (ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
@@ -44,17 +44,20 @@ public class Server {
 				Map<String, Object> requestParams;
 				requestParams = (Map<String, Object>) in.readObject();
 
-				int id = (int) requestParams.get("id");
+				int requestId = (int) requestParams.get("requestId");
 				String serviceName = (String) requestParams.get("serviceName");
 				String methodName = (String) requestParams.get("methodName");
 				Object[] params = (Object[]) requestParams.get("params");
 
-				logger.info("Received request: " + "ID = " + id + ", serviceName = " + serviceName +
+				logger.info("Received request: " + "ID = " + requestId + ", serviceName = " + serviceName +
 					", methodName = " + methodName + ", params = " + Arrays.toString(params));
 
-				threadPool.submit(() -> processResponse(out, id, serviceName, methodName, params));
+				threadPool.submit(() -> processResponse(out, requestId, serviceName, methodName, params));
 			}
-		} catch (IOException | ClassNotFoundException e) {
+		} catch (IOException e) {
+			System.err.println("IO Exception during process request to client!");
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 	}
@@ -77,12 +80,12 @@ public class Server {
 				result = method.invoke(service, params);
 				response.put("result", result);
 			} catch (NoSuchMethodException e) {
-				response.put("exception", "No Such Method");
+				response.put("exception", "No such method or invalid arguments or invalid arguments count!");
 			} catch (IllegalAccessException | InvocationTargetException e) {
 				e.printStackTrace();
 			}
 		} else {
-			response.put("exception", "No Such Service");
+			response.put("exception", "No such service!");
 		}
 
 		String exception = (String) response.get("exception");
