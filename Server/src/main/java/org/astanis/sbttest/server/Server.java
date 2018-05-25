@@ -28,6 +28,8 @@ public class Server {
 	private final Logger logger = Logger.getLogger(Server.class);
 	private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 	private final Map<String, Object> services = new ConcurrentHashMap<>();
+	private final Object inLock = new Object();
+	private final Object outLock = new Object();
 
 	/**
 	 * Создает сервер на указанном порту и инициализирует по одному объекту
@@ -70,7 +72,7 @@ public class Server {
 			while (!client.isClosed()) {
 				Map<String, Object> requestParams;
 
-				synchronized (in) {
+				synchronized (inLock) {
 					requestParams = (Map<String, Object>) in.readObject();
 				}
 
@@ -116,13 +118,13 @@ public class Server {
 		try {
 			if (exception != null) {
 				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + exception);
-				synchronized (out) {
+				synchronized (outLock) {
 					out.writeObject(response);
 				}
 			} else {
 				Object result = response.get("result");
 				logger.info("Sending response: " + "ID = " + requestId + ", result = " + (result != null ? result.toString() : null));
-				synchronized (out) {
+				synchronized (outLock) {
 					out.writeObject(response);
 				}
 			}

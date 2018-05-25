@@ -28,6 +28,8 @@ public class Client {
 	private final Map<Integer, Map<String, Object>> unusedResponses = new ConcurrentHashMap<>();
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
+	private final Object inLock = new Object();
+	private final Object outLock = new Object();
 
 	/**
 	 * Создает клиента с указанным хостом и портов. Инициирует создание
@@ -58,7 +60,7 @@ public class Client {
 	}
 
 	/**
-	 * Метод, осуществляющий удаленный вызов. Осуществляет отправку
+	 * Метод, осуществляющий удаленный вызов. Осуществляет отправку запроса.
 	 *
 	 * @param serviceName Имя сервиса, у которога будет производится вызов метода.
 	 * @param methodName  Название вызываемого метода.
@@ -70,7 +72,7 @@ public class Client {
 		Map<String, Object> request = createRequest(requestId, serviceName, methodName, params);
 
 		try {
-			synchronized (out) {
+			synchronized (outLock) {
 				out.writeObject(request);
 			}
 
@@ -120,9 +122,10 @@ public class Client {
 			while (response == null) {
 				Map<String, Object> temp = unusedResponses.get(requestId);
 				if (temp != null) {
-					response = unusedResponses.get(requestId);
+					response = temp;
+					unusedResponses.remove(requestId);
 				} else {
-					synchronized (in) {
+					synchronized (inLock) {
 						temp = (Map<String, Object>) in.readObject();
 						int id = (int) temp.get("requestId");
 						if (id == requestId) {
