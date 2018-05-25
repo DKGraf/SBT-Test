@@ -13,6 +13,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Клиент для удаленного вызова методов. Устанавливает соединение с удаленным
+ * сервером и производит вызов методов у определенных сервисов. Производит
+ * логирование отправленных запросов и полученных ответов.
+ *
+ * @author dkgraf
+ */
 public class Client {
 	private final String host;
 	private final int port;
@@ -22,12 +29,23 @@ public class Client {
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
 
+	/**
+	 * Создает клиента с указанным хостом и портов. Инициирует создание
+	 * подключения у серверу.
+	 *
+	 * @param host Хост, на котором находится сервер.
+	 * @param port Порт, на котором сервер ожидает подключение.
+	 */
 	public Client(String host, int port) {
 		this.host = host;
 		this.port = port;
 		openConnection();
 	}
 
+	/**
+	 * Метод, Открывающий соединение к серверу и создающий ObjectInputStream
+	 * и ObjectOutputStream для записи и чтения данных.
+	 */
 	private void openConnection() {
 		try {
 			Socket socket = new Socket(host, port);
@@ -39,39 +57,61 @@ public class Client {
 		}
 	}
 
+	/**
+	 * Метод, осуществляющий удаленный вызов. Осуществляет отправку
+	 *
+	 * @param serviceName Имя сервиса, у которога будет производится вызов метода.
+	 * @param methodName  Название вызываемого метода.
+	 * @param params      Массив аргументов, с которыми будет вызываться метод.
+	 * @return Ответ сервера, полученный на удаленный вызов метода.
+	 */
 	public Object remoteCall(String serviceName, String methodName, Object[] params) {
 		int requestId = uniqueId.incrementAndGet();
 		Map<String, Object> request = createRequest(requestId, serviceName, methodName, params);
-		Object result = null;
 
 		try {
 			synchronized (out) {
 				out.writeObject(request);
 			}
+
 			logger.info("Sending request: " + "ID = " + requestId + ", serviceName = " + serviceName +
 				", methodName = " + methodName + ", params = " + Arrays.toString(params));
-
-			Map<String, Object> response = getResponse(requestId);
-
-			String exception = (String) response.get("exception");
-			if (exception != null) {
-				throw new RmiException(exception);
-			}
-
-			result = response.get("result");
-			if (result != null) {
-				logger.info("Response reieved: " + "ID = " + response.get("requestId") + ", result = " + result);
-			} else {
-				logger.info("Response reieved: " + "ID = " + response.get("requestId") +
-					", method with return type \"void\" invoked successful!");
-			}
-		} catch (IOException | RmiException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
-		return result;
+		Map<String, Object> response = getResponse(requestId);
+
+		return getResult(response);
 	}
 
+	/**
+	 * Создает запрос для удаленного вызова метода.
+	 *
+	 * @param requestId   Уникальный, в рамках клиентского соединения, идентификатор
+	 *                    запроса.
+	 * @param serviceName Имя сервиса, у которога будет производится вызов метода.
+	 * @param methodName  Название вызываемого метода.
+	 * @param params      Массив аргументов, с которыми будет вызываться метод.
+	 * @return Map, содержащую запрос для сервера.
+	 */
+	private Map<String, Object> createRequest(int requestId, String serviceName, String methodName, Object[] params) {
+		Map<String, Object> request = new HashMap<>();
+		request.put("requestId", requestId);
+		request.put("serviceName", serviceName);
+		request.put("methodName", methodName);
+		request.put("params", params);
+
+		return request;
+	}
+
+	/**
+	 * Получает ответ от удаленного сервера.
+	 *
+	 * @param requestId Уникальный, в рамках клиентского соединения, идентификатор
+	 *                  запроса.
+	 * @return Map, представляющую из себе ответ сервера на запрос.
+	 */
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> getResponse(int requestId) {
 		Map<String, Object> response = null;
@@ -100,14 +140,30 @@ public class Client {
 		return response;
 	}
 
-	private Map<String, Object> createRequest(int requestId, String serviceName, String methodName, Object[] params) {
-		Map<String, Object> request = new HashMap<>();
-		request.put("requestId", requestId);
-		request.put("serviceName", serviceName);
-		request.put("methodName", methodName);
-		request.put("params", params);
+	/**
+	 * Получает результат выполнения удаленного вызова.
+	 *
+	 * @param response Объект, представляющий собой ответ сервера.
+	 * @return Результат выполнения удаленного вызова.
+	 */
+	private Object getResult(Map<String, Object> response) {
+		String exception = (String) response.get("exception");
+		if (exception != null) {
+			try {
+				throw new RmiException(exception);
+			} catch (RmiException e) {
+				e.printStackTrace();
+			}
+		}
 
-		return request;
+		Object result = response.get("result");
+		if (result != null) {
+			logger.info("Response received: " + "ID = " + response.get("requestId") + ", result = " + result);
+		} else {
+			logger.info("Response received: " + "ID = " + response.get("requestId") +
+				", method with return type \"void\" invoked successful!");
+		}
+
+		return result;
 	}
 }
-
