@@ -65,15 +65,37 @@ public class Server {
 		}
 	}
 
-	//TODO void support
 	private void processResponse(ObjectOutputStream out,
 	                             int requestId,
 	                             String serviceName,
 	                             String methodName,
 	                             Object[] params) {
 
+		Map<String, Object> response = createResponse(requestId, serviceName, methodName, params);
+
+		String exception = (String) response.get("exception");
+		try {
+			if (exception != null) {
+				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + exception);
+				synchronized (out) {
+					out.writeObject(response);
+				}
+			} else {
+				Object result = response.get("result");
+				logger.info("Sending response: " + "ID = " + requestId + ", result = " + (result != null ? result.toString() : null));
+				synchronized (out) {
+					out.writeObject(response);
+				}
+			}
+		} catch (IOException e) {
+			System.err.println("IO Exception during sending response to client!");
+			e.printStackTrace();
+		}
+	}
+
+	private Map<String, Object> createResponse(int requestId, String serviceName, String methodName, Object[] params) {
 		Object service = services.get(serviceName);
-		Object result = null;
+		Object result;
 		Map<String, Object> response = new HashMap<>();
 		response.put("requestId", requestId);
 
@@ -91,23 +113,7 @@ public class Server {
 			response.put("exception", "No such service!");
 		}
 
-		String exception = (String) response.get("exception");
-		try {
-			if (exception != null) {
-				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + exception);
-				synchronized (out) {
-					out.writeObject(response);
-				}
-			} else {
-				logger.info("Sending response: " + "ID = " + requestId + ", result = " + (result != null ? result.toString() : null));
-				synchronized (out) {
-					out.writeObject(response);
-				}
-			}
-		} catch (IOException e) {
-			System.err.println("IO Exception during sending response to client!");
-			e.printStackTrace();
-		}
+		return response;
 	}
 
 	private void initServices() {
