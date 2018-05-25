@@ -29,7 +29,7 @@ public class ClientStarter {
 			while (true) {
 				Random random = new Random();
 				try {
-					Thread.sleep((long) random.nextInt(4000) + 1000);
+					Thread.sleep((long) random.nextInt(2500) + 500);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

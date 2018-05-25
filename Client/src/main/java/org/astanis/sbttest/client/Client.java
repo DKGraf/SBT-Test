@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Client {
@@ -17,6 +18,7 @@ public class Client {
 	private final int port;
 	private final AtomicInteger uniqueId = new AtomicInteger(0);
 	private final Logger logger = Logger.getLogger(Client.class);
+	private final Map<Integer, Map<String, Object>> unusedResponses = new ConcurrentHashMap<>();
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
 
@@ -40,7 +42,7 @@ public class Client {
 	@SuppressWarnings("unchecked")
 	public Object remoteCall(String serviceName, String methodName, Object[] params) {
 		int requestId = uniqueId.incrementAndGet();
-		Map<String, Object> response;
+		Map<String, Object> response = null;
 		Map<String, Object> request = new HashMap<>();
 		request.put("requestId", requestId);
 		request.put("serviceName", serviceName);
@@ -56,8 +58,21 @@ public class Client {
 			logger.info("Sending request: " + "ID = " + requestId + ", serviceName = " + serviceName +
 				", methodName = " + methodName + ", params = " + Arrays.toString(params));
 
-			synchronized (in) {
-				response = (Map<String, Object>) in.readObject();
+			while (response == null) {
+				Map<String, Object> temp = unusedResponses.get(requestId);
+				if (temp != null) {
+					response = unusedResponses.get(requestId);
+				} else {
+					synchronized (in) {
+						temp = (Map<String, Object>) in.readObject();
+						int id = (int) temp.get("requestId");
+						if (id == requestId) {
+							response = temp;
+						} else {
+							unusedResponses.put(id, temp);
+						}
+					}
+				}
 			}
 
 			String exception = (String) response.get("exception");
