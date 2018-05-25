@@ -20,8 +20,8 @@ public class ClientStarter {
 		private Logger logger = Logger.getLogger(Caller.class);
 		private Client client;
 
-		Caller(Client cclient) {
-			this.client = cclient;
+		Caller(Client client) {
+			this.client = client;
 		}
 
 		@SuppressWarnings("InfiniteLoopStatement")
@@ -35,7 +35,10 @@ public class ClientStarter {
 				}
 				client.remoteCall("service1", "sleep", new Object[]{1000L});
 				logger.info("Current Date is: " + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
-
+				Integer x = new Random().nextInt(1000);
+				Integer y = new Random().nextInt(1000);
+				logger.info(x.toString() + " multiply by " + y.toString() + " equals " +
+					client.remoteCall("service2", "multiply", new Object[] {x, y}));
 			}
 		}
 	}

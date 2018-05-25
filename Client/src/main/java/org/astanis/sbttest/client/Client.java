@@ -39,16 +39,9 @@ public class Client {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public Object remoteCall(String serviceName, String methodName, Object[] params) {
 		int requestId = uniqueId.incrementAndGet();
-		Map<String, Object> response = null;
-		Map<String, Object> request = new HashMap<>();
-		request.put("requestId", requestId);
-		request.put("serviceName", serviceName);
-		request.put("methodName", methodName);
-		request.put("params", params);
-
+		Map<String, Object> request = createRequest(requestId, serviceName, methodName, params);
 		Object result = null;
 
 		try {
@@ -58,6 +51,32 @@ public class Client {
 			logger.info("Sending request: " + "ID = " + requestId + ", serviceName = " + serviceName +
 				", methodName = " + methodName + ", params = " + Arrays.toString(params));
 
+			Map<String, Object> response = getResponse(requestId);
+
+			String exception = (String) response.get("exception");
+			if (exception != null) {
+				throw new RmiException(exception);
+			}
+
+			result = response.get("result");
+			if (result != null) {
+				logger.info("Response reieved: " + "ID = " + response.get("requestId") + ", result = " + result);
+			} else {
+				logger.info("Response reieved: " + "ID = " + response.get("requestId") +
+					", method with return type \"void\" invoked successful!");
+			}
+		} catch (IOException | RmiException e) {
+			e.printStackTrace();
+		}
+
+		return result;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> getResponse(int requestId) {
+		Map<String, Object> response = null;
+
+		try {
 			while (response == null) {
 				Map<String, Object> temp = unusedResponses.get(requestId);
 				if (temp != null) {
@@ -74,24 +93,21 @@ public class Client {
 					}
 				}
 			}
-
-			String exception = (String) response.get("exception");
-			if (exception != null) {
-				throw new RmiException(exception);
-			}
-
-			result = response.get("result");
-			if (result != null) {
-				logger.info("Response reieved: " + "ID = " + response.get("requestId") + ", result = " + result);
-			} else {
-				logger.info("Response reieved: " + "ID = " + response.get("requestId") +
-					", method with return type \"void\" invoked successful!");
-			}
-		} catch (IOException | ClassNotFoundException | RmiException e) {
+		} catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 
-		return result;
+		return response;
+	}
+
+	private Map<String, Object> createRequest(int requestId, String serviceName, String methodName, Object[] params) {
+		Map<String, Object> request = new HashMap<>();
+		request.put("requestId", requestId);
+		request.put("serviceName", serviceName);
+		request.put("methodName", methodName);
+		request.put("params", params);
+
+		return request;
 	}
 }
 
