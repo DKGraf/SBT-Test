@@ -11,6 +11,18 @@ repositories {
     mavenCentral()
 }
 
+apply plugin: 'application'
+
+mainClassName = 'org.astanis.sbttest.ClientStarter'
+
+run {
+    if(System.getProperty("exec.args") != null) {
+        args System.getProperty("exec.args").split()
+    } else {
+        args 'localhost 9999'.split()
+    }
+}
+
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile group: 'log4j', name: 'log4j', version: '1.2.16'

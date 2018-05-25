@@ -5,12 +5,15 @@ import org.astanis.sbttest.client.Client;
 
 import java.util.Random;
 
+/**
+ * Запускает клиент. Хост и порт сервера передаются в качестве аргументов
+ * командной строки. Первый аргумент - хост, второй - порт.
+ */
 public class ClientStarter {
 	public static void main(String[] args) {
-//		String host = args[0];
-//		int port = Integer.parseInt(args[1]);
-//		Client client = new Client(host, port);
-		Client client = new Client("localhost", 9999);
+		String host = args[0];
+		int port = Integer.parseInt(args[1]);
+		Client client = new Client(host, port);
 		for (int i = 0; i < 10; i++) {
 			new Thread(new Caller(client)).start();
 		}

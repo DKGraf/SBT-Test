@@ -2,6 +2,7 @@ plugins {
     id 'java'
 }
 
+
 group 'org.astanis'
 version '1.0-SNAPSHOT'
 
@@ -9,6 +10,18 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+}
+
+apply plugin: 'application'
+
+mainClassName = 'org.astanis.sbttest.ServerStarter'
+
+run {
+    if(System.getProperty("exec.args") != null) {
+        args System.getProperty("exec.args").split()
+    } else {
+        args '9999'
+    }
 }
 
 dependencies {
