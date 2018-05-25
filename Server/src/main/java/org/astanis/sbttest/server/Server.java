@@ -120,12 +120,14 @@ public class Server {
 				logger.info("Sending response: " + "ID = " + requestId + ", Error processing request: " + exception);
 				synchronized (outLock) {
 					out.writeObject(response);
+					out.flush();
 				}
 			} else {
 				Object result = response.get("result");
 				logger.info("Sending response: " + "ID = " + requestId + ", result = " + (result != null ? result.toString() : null));
 				synchronized (outLock) {
 					out.writeObject(response);
+					out.flush();
 				}
 			}
 		} catch (IOException e) {

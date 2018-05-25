@@ -74,6 +74,7 @@ public class Client {
 		try {
 			synchronized (outLock) {
 				out.writeObject(request);
+				out.flush();
 			}
 
 			logger.info("Sending request: " + "ID = " + requestId + ", serviceName = " + serviceName +
