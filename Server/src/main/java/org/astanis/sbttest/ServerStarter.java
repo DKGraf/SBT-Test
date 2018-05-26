@@ -1,5 +1,6 @@
 package org.astanis.sbttest;
 
+import org.astanis.sbttest.server.Server;
 import org.astanis.sbttest.server.ServerImpl;
 
 /**
@@ -8,7 +9,7 @@ import org.astanis.sbttest.server.ServerImpl;
 public class ServerStarter {
 	public static void main(String[] args) {
 		int port = Integer.parseInt(args[0]);
-		ServerImpl server = new ServerImpl(port);
+		Server server = new ServerImpl(port);
 		server.run();
 	}
 }
