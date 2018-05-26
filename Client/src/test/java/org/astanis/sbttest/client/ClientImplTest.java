@@ -9,18 +9,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
 class ClientImplTest {
-	private static Server server;
+	private static Client client;
 
 	@BeforeAll
 	static void setUp() {
-		server = new ServerImpl(9999);
+		Server server = new ServerImpl(9999);
 		new Thread(server::run).start();
+		client = new ClientImpl("localhost", 9999);
 	}
 
 	@Test
 	void remoteCall() throws RmiException {
-		Client client = new ClientImpl("localhost", 9999);
-
 		Integer x = 10;
 		Integer y = 15;
 		Object result = client.remoteCall("service2", "multiply", new Object[]{x, y});
@@ -29,8 +28,6 @@ class ClientImplTest {
 
 	@Test
 	void shouldThrowException1() {
-		Client client = new ClientImpl("localhost", 9999);
-
 		Executable closureContainingCodeToTest = () ->
 			client.remoteCall("service2", "something", new Object[]{});
 		Assertions.assertThrows(RmiException.class, closureContainingCodeToTest,
@@ -39,8 +36,6 @@ class ClientImplTest {
 
 	@Test
 	void shouldThrowException2() {
-		Client client = new ClientImpl("localhost", 9999);
-
 		Executable closureContainingCodeToTest = () ->
 			client.remoteCall("wrongService", "multiply", new Object[]{});
 		Assertions.assertThrows(RmiException.class, closureContainingCodeToTest,
