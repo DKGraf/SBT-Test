@@ -66,9 +66,11 @@ public class ClientImpl implements Client {
 	 * @param methodName  Название вызываемого метода.
 	 * @param params      Массив аргументов, с которыми будет вызываться метод.
 	 * @return Ответ сервера, полученный на удаленный вызов метода.
+	 * @throws RmiException если был запрошен несуществующий серви, метод или
+	 *                      неверное количество аргументов метода или их типы.
 	 */
 	@Override
-	public Object remoteCall(String serviceName, String methodName, Object[] params) {
+	public Object remoteCall(String serviceName, String methodName, Object[] params) throws RmiException {
 		int requestId = uniqueId.incrementAndGet();
 		Map<String, Object> request = createRequest(requestId, serviceName, methodName, params);
 
@@ -150,15 +152,13 @@ public class ClientImpl implements Client {
 	 *
 	 * @param response Объект, представляющий собой ответ сервера.
 	 * @return Результат выполнения удаленного вызова.
+	 * @throws RmiException если был запрошен несуществующий серви, метод или
+	 *                      неверное количество аргументов метода или их типы.
 	 */
-	private Object getResult(Map<String, Object> response) {
+	private Object getResult(Map<String, Object> response) throws RmiException {
 		String exception = (String) response.get("exception");
 		if (exception != null) {
-			try {
-				throw new RmiException(exception);
-			} catch (RmiException e) {
-				e.printStackTrace();
-			}
+			throw new RmiException(exception);
 		}
 
 		Object result = response.get("result");

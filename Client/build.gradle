@@ -29,6 +29,7 @@ jar {
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.2.0'
     compile group: 'log4j', name: 'log4j', version: '1.2.16'
+    compile project(':Server')
 }

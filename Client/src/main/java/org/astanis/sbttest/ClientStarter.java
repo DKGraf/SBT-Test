@@ -3,6 +3,7 @@ package org.astanis.sbttest;
 import org.apache.log4j.Logger;
 import org.astanis.sbttest.client.Client;
 import org.astanis.sbttest.client.ClientImpl;
+import org.astanis.sbttest.exception.RmiException;
 
 import java.util.Random;
 
@@ -37,12 +38,17 @@ public class ClientStarter {
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				client.remoteCall("service1", "sleep", new Object[]{1000L});
-				logger.info("Current Date is: " + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
-				Integer x = new Random().nextInt(1000);
-				Integer y = new Random().nextInt(1000);
-				logger.info(x.toString() + " multiply by " + y.toString() + " equals " +
-					client.remoteCall("service2", "multiply", new Object[] {x, y}));
+				try {
+					client.remoteCall("service1", "sleep", new Object[]{1000L});
+					logger.info("Current Date is: " + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
+					Integer x = new Random().nextInt(1000);
+					Integer y = new Random().nextInt(1000);
+					logger.info(x.toString() + " multiply by " + y.toString() + " equals " +
+						client.remoteCall("service2", "multiply", new Object[]{x, y}));
+				} catch (RmiException e) {
+					e.printStackTrace();
+				}
+
 			}
 		}
 	}

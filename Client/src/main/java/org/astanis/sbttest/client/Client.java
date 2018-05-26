@@ -1,5 +1,7 @@
 package org.astanis.sbttest.client;
 
+import org.astanis.sbttest.exception.RmiException;
+
 /**
  * Интерфейс клиента для удаленного вызова методов.
  *
@@ -14,5 +16,5 @@ public interface Client {
 	 * @param params      Массив аргументов, с которыми будет вызываться метод.
 	 * @return Ответ сервера, полученный на удаленный вызов метода.
 	 */
-	Object remoteCall(String serviceName, String methodName, Object[] params);
+	Object remoteCall(String serviceName, String methodName, Object[] params) throws RmiException;
 }
