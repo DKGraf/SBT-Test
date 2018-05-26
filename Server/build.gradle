@@ -2,7 +2,6 @@ plugins {
     id 'java'
 }
 
-
 group 'org.astanis'
 version '1.0-SNAPSHOT'
 
@@ -22,6 +21,11 @@ run {
     } else {
         args '9999'
     }
+}
+
+jar {
+    manifest.attributes("Main-Class": mainClassName)
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
 dependencies {

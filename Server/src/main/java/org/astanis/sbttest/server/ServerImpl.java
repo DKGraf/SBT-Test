@@ -154,14 +154,13 @@ public class ServerImpl implements Server {
 	                                           Object[] params) {
 
 		Object service = services.get(serviceName);
-		Object result;
 		Map<String, Object> response = new HashMap<>();
 		response.put("requestId", requestId);
 
 		if (service != null) {
 			try {
 				Method method = service.getClass().getMethod(methodName, methodArgumentsClasses(params));
-				result = method.invoke(service, params);
+				Object result = method.invoke(service, params);
 				response.put("result", result);
 			} catch (NoSuchMethodException e) {
 				response.put("exception", "No such method or invalid arguments or invalid arguments count!");
@@ -180,19 +179,13 @@ public class ServerImpl implements Server {
 	 * Имена сервисов и их классы содержатся в файле server.properties.
 	 */
 	private void initServices() {
-		FileInputStream fis;
-		Properties property = new Properties();
-
 		try {
-			ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-			File propertyFile = new File(Objects.requireNonNull(classLoader.getResource("server.properties")).getFile());
-			fis = new FileInputStream(propertyFile);
-			property.load(fis);
+			Properties property = new Properties();
+			property.load(getClass().getResourceAsStream("/server.properties"));
 
 			for (Map.Entry<Object, Object> entry : property.entrySet()) {
 				services.put((String) entry.getKey(), Class.forName((String) entry.getValue()).newInstance());
 			}
-
 		} catch (IOException e) {
 			System.err.println("Error: Property file not found!");
 			e.printStackTrace();
@@ -200,7 +193,6 @@ public class ServerImpl implements Server {
 			System.err.println("Exception during creation of service instance!");
 			e.printStackTrace();
 		}
-
 	}
 
 	/**
