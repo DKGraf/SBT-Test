@@ -9,13 +9,20 @@ import java.util.Random;
 
 /**
  * Запускает клиент. Хост и порт сервера передаются в качестве аргументов
- * командной строки. Первый аргумент - хост, второй - порт.
+ * командной строки. Первый аргумент - хост, второй - порт. Если аргументы
+ * не переданы, то запускается клиент, пытающийся установить соединение с
+ * localhost:9999.
  */
 public class ClientStarter {
 	public static void main(String[] args) {
-		String host = args[0];
-		int port = Integer.parseInt(args[1]);
-		Client client = new ClientImpl(host, port);
+		Client client;
+		if (args.length >= 2) {
+			String host = args[0];
+			int port = Integer.parseInt(args[1]);
+			client = new ClientImpl(host, port);
+		} else {
+			client = new ClientImpl();
+		}
 		for (int i = 0; i < 10; i++) {
 			new Thread(new Caller(client)).start();
 		}
@@ -40,7 +47,10 @@ public class ClientStarter {
 				}
 				try {
 					client.remoteCall("service1", "sleep", new Object[]{1000L});
-					logger.info("Current Date is: " + client.remoteCall("service1", "getCurrentDate", new Object[]{}));
+
+					logger.info("Current Date is: " +
+						client.remoteCall("service1", "getCurrentDate", new Object[]{}));
+
 					Integer x = new Random().nextInt(1000);
 					Integer y = new Random().nextInt(1000);
 					logger.info(x.toString() + " multiply by " + y.toString() + " equals " +
@@ -48,7 +58,6 @@ public class ClientStarter {
 				} catch (RmiException e) {
 					e.printStackTrace();
 				}
-
 			}
 		}
 	}

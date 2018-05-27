@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author dkgraf
  */
 public class ClientImpl implements Client {
+	private final static int DEFAULT_PORT = 9999;
+	private final static String DEFAULT_HOST = "localhost";
 	private final String host;
 	private final int port;
 	private final AtomicInteger uniqueId = new AtomicInteger(0);
@@ -32,8 +34,16 @@ public class ClientImpl implements Client {
 	private final Object outLock = new Object();
 
 	/**
+	 * Создает клиента на, который пытается подключится к серверу на хосте
+	 * DEFAULT_HOST и порту DEFAULT_PORT. Инициирует создание подключения
+	 * к серверу.
+	 */
+	public ClientImpl() {
+		this(DEFAULT_HOST, DEFAULT_PORT);
+	}
+	/**
 	 * Создает клиента с указанным хостом и портов. Инициирует создание
-	 * подключения у серверу.
+	 * подключения к серверу.
 	 *
 	 * @param host Хост, на котором находится сервер.
 	 * @param port Порт, на котором сервер ожидает подключение.
@@ -54,8 +64,8 @@ public class ClientImpl implements Client {
 			out = new ObjectOutputStream(socket.getOutputStream());
 			in = new ObjectInputStream(socket.getInputStream());
 		} catch (IOException e) {
-			System.err.println("Server unavailable!");
-			e.printStackTrace();
+			logger.error("Server unavailable!", e);
+			System.exit(1);
 		}
 	}
 
@@ -83,7 +93,8 @@ public class ClientImpl implements Client {
 			logger.info("Sending request: " + "ID = " + requestId + ", serviceName = " + serviceName +
 				", methodName = " + methodName + ", params = " + Arrays.toString(params));
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("IO exception during sending request to server! Server unavailable", e);
+			System.exit(1);
 		}
 
 		Map<String, Object> response = getResponse(requestId);
@@ -141,7 +152,8 @@ public class ClientImpl implements Client {
 				}
 			}
 		} catch (IOException | ClassNotFoundException e) {
-			e.printStackTrace();
+			logger.error("IO exception during receiving request from server! Server unavailable", e);
+			System.exit(1);
 		}
 
 		return response;

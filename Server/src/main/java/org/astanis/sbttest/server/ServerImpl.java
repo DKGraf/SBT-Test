@@ -2,12 +2,17 @@ package org.astanis.sbttest.server;
 
 import org.apache.log4j.Logger;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -24,12 +29,21 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author dkgraf
  */
 public class ServerImpl implements Server {
+	private final static int DEFAULT_PORT = 9999;
 	private final int port;
 	private final Logger logger = Logger.getLogger(ServerImpl.class);
 	private final ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 	private final Map<String, Object> services = new ConcurrentHashMap<>();
 	private final Object inLock = new Object();
 	private final Object outLock = new Object();
+
+	/**
+	 * Создает сервер на порту DEFAULT_PORT и инициализирует по одному
+	 * объекту каждого сервиса.
+	 */
+	public ServerImpl() {
+		this(DEFAULT_PORT);
+	}
 
 	/**
 	 * Создает сервер на указанном порту и инициализирует по одному объекту
@@ -55,8 +69,8 @@ public class ServerImpl implements Server {
 				new Thread(() -> receiveRequest(client)).start();
 			}
 		} catch (IOException e) {
-			System.err.println("IO Exception during socket creation!");
-			e.printStackTrace();
+			logger.error("IO Exception during socket creation!", e);
+			System.exit(1);
 		}
 	}
 
@@ -88,8 +102,7 @@ public class ServerImpl implements Server {
 				threadPool.submit(() -> sendResponse(out, requestId, serviceName, methodName, params));
 			}
 		} catch (IOException e) {
-			System.err.println("IO Exception during process request from client!");
-			e.printStackTrace();
+			logger.error("IO Exception during process request from client! Client unavailable.");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -132,8 +145,7 @@ public class ServerImpl implements Server {
 				}
 			}
 		} catch (IOException e) {
-			System.err.println("IO Exception during sending response to client!");
-			e.printStackTrace();
+			logger.error("IO Exception during sending response to client!  Client unavailable.");
 		}
 	}
 
@@ -187,11 +199,10 @@ public class ServerImpl implements Server {
 				services.put((String) entry.getKey(), Class.forName((String) entry.getValue()).newInstance());
 			}
 		} catch (IOException e) {
-			System.err.println("Error: Property file not found!");
-			e.printStackTrace();
+			logger.error("Error: Property file not found!", e);
+			System.exit(1);
 		} catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
-			System.err.println("Exception during creation of service instance!");
-			e.printStackTrace();
+			logger.error("Exception during creation of service instance!", e);
 		}
 	}
 
